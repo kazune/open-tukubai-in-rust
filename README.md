@@ -24,31 +24,33 @@ Shared parsing behavior is intentionally strict:
 
 This repository does not interpret text encoding and does not depend on locale.
 
-## Workspace structure
+## Current workspace
+
+The repository currently contains these crates:
 
 ```
-
 crates/
-tukubai-core
-tukubai-self
-tukubai-join1
-tukubai-count
-
+  tukubai-core
+  tukubai-lcnt
 ```
 
 - **tukubai-core**
   shared parsing rules and record/field model
+- **tukubai-lcnt**
+  first command crate; counts LF-terminated records
 
-- **command crates**
-  Rust implementations of tukubai commands
+Additional command crates will be added incrementally after the shared parsing
+layer is in place.
 
-## Example commands
+## Planned commands
 
-| command | description |
-|-------|-------------|
-| self | select records |
-| join1 | join two inputs |
-| count | count records |
+Initial command coverage is expected to include:
+
+| command | status | description |
+|-------|--------|-------------|
+| lcnt | in workspace | count records |
+| self | planned | select records |
+| join1 | planned | join two inputs |
 
 ## Documents
 
@@ -56,3 +58,21 @@ tukubai-count
 - DESIGN.md — architecture
 - TESTING.md — testing strategy
 - ROADMAP.md — implementation phases
+- CONTRIBUTING.md — contribution and review rules
+
+## Development
+
+Repository-level checks are run from the workspace root:
+
+```
+cargo test
+cargo fmt --check
+cargo clippy --workspace --all-targets -- -D warnings
+```
+
+Test assets are split by scope:
+
+- `tests/fixtures/shared/` — checked-in fixtures reused across crates
+- `crates/<name>/tests/` — integration tests for each crate
+- `crates/<name>/tests/fixtures/` — crate-specific fixtures
+- `tests/tmp/` — optional repository-level scratch area ignored by git

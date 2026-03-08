@@ -6,11 +6,7 @@
 **/target/
 
 # Cargo
-Cargo.lock
-# NOTE:
-# For binary applications it is usually committed.
-# Uncomment the next line if you decide to track it.
-#!Cargo.lock
+# Track Cargo.lock for reproducible builds in this CLI workspace.
 
 # =================================
 # Editor / IDE
@@ -49,12 +45,11 @@ desktop.ini
 *.log
 
 # =================================
-# Test output / fixtures generated during tests
+# Test output generated during tests
 # =================================
 
-tests/output/
 tests/tmp/
-tests/work/
+**/tests/tmp/
 
 # =================================
 # Coverage
