@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "crates/tukubai-core",
+    "crates/tukubai-lcnt",
+]
+resolver = "3"
+
