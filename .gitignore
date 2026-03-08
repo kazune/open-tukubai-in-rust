@@ -1,0 +1,87 @@
+# =================================
+# Rust build artifacts
+# =================================
+
+/target/
+**/target/
+
+# Cargo
+Cargo.lock
+# NOTE:
+# For binary applications it is usually committed.
+# Uncomment the next line if you decide to track it.
+#!Cargo.lock
+
+# =================================
+# Editor / IDE
+# =================================
+
+.vscode/
+.idea/
+*.iml
+
+# JetBrains
+*.ipr
+*.iws
+
+# =================================
+# OS files
+# =================================
+
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =================================
+# Backup / temporary files
+# =================================
+
+*~
+*.swp
+*.swo
+*.tmp
+*.bak
+
+# =================================
+# Logs
+# =================================
+
+*.log
+
+# =================================
+# Test output / fixtures generated during tests
+# =================================
+
+tests/output/
+tests/tmp/
+tests/work/
+
+# =================================
+# Coverage
+# =================================
+
+coverage/
+*.profraw
+*.profdata
+
+# =================================
+# Rust tooling
+# =================================
+
+.rustup/
+.rustfmt.toml.bk
+
+# =================================
+# Codex / agent experiments
+# =================================
+
+.codex/
+.agent-work/
+.ai-work/
+
+# =================================
+# Misc
+# =================================
+
+*.out
+*.bin
