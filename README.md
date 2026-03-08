@@ -51,6 +51,12 @@ Example:
 
 - package `tukubai-lcnt` builds the `lcnt` binary
 
+Shared input handling rules:
+
+- `-` means standard input in command crates
+- if a command needs to print the standard input source name, it uses `-`
+- final-record termination policy is selected by each command via `tukubai-core`
+
 ## Planned commands
 
 Initial command coverage is expected to include:
