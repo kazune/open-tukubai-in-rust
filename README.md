@@ -42,6 +42,15 @@ crates/
 Additional command crates will be added incrementally after the shared parsing
 layer is in place.
 
+Command crates use a split naming convention:
+
+- Cargo package names are `tukubai-<command>`
+- installed or built binary names are `<command>`
+
+Example:
+
+- package `tukubai-lcnt` builds the `lcnt` binary
+
 ## Planned commands
 
 Initial command coverage is expected to include:
