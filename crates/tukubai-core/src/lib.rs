@@ -2,14 +2,17 @@ use std::error::Error as StdError;
 use std::fmt;
 use std::io::{self, BufRead};
 
+/// Canonical display name for standard input across command crates.
 pub const STDIN_SOURCE_NAME: &str = "-";
 
+/// Controls how the record reader handles the final input chunk.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum FinalTermination {
     RequireLf,
     AllowUnterminatedFinalRecord,
 }
 
+/// Shared options for byte-oriented record reading.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ReaderOptions {
     pub final_termination: FinalTermination,
@@ -60,10 +63,12 @@ pub struct RecordReader<R> {
 }
 
 impl<R: BufRead> RecordReader<R> {
+    /// Creates a record reader that requires every record to end with LF.
     pub fn new(reader: R) -> Self {
         Self::with_options(reader, ReaderOptions::default())
     }
 
+    /// Creates a record reader with an explicit final-record policy.
     pub fn with_options(reader: R, options: ReaderOptions) -> Self {
         Self {
             reader,
@@ -72,6 +77,10 @@ impl<R: BufRead> RecordReader<R> {
         }
     }
 
+    /// Reads the next record payload without the trailing LF byte.
+    ///
+    /// Returns `Ok(None)` on clean EOF. Empty input is therefore valid and
+    /// yields no records.
     pub fn read_record(&mut self) -> Result<Option<&[u8]>, ParseError> {
         self.buffer.clear();
 
@@ -92,6 +101,7 @@ impl<R: BufRead> RecordReader<R> {
     }
 }
 
+/// Splits one record into fields using the shared byte-oriented space rules.
 pub fn split_fields(record: &[u8]) -> FieldIter<'_> {
     FieldIter::new(record)
 }
@@ -143,6 +153,7 @@ fn trim_trailing_spaces(record: &[u8], mut index: usize) -> usize {
     index
 }
 
+/// Returns true when a path token should be interpreted as standard input.
 pub fn is_stdin_path(path: &std::path::Path) -> bool {
     path.as_os_str() == STDIN_SOURCE_NAME
 }

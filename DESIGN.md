@@ -41,6 +41,13 @@ Command crate naming convention:
 This keeps workspace crate names unique while exposing user-facing command
 names that match tukubai commands.
 
+Shared command-input conventions:
+
+- `-` is interpreted as standard input
+- when a command prints the standard input source name, it prints `-`
+- command crates choose the final-record termination policy through
+  `tukubai-core::ReaderOptions`
+
 ## tukubai-core responsibilities
 
 - shared error types
