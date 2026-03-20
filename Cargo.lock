@@ -12,3 +12,10 @@ version = "0.1.0"
 dependencies = [
  "tukubai-core",
 ]
+
+[[package]]
+name = "tukubai-self"
+version = "0.1.0"
+dependencies = [
+ "tukubai-core",
+]
