@@ -1,0 +1,11 @@
+[package]
+name = "tukubai-self"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "self"
+path = "src/main.rs"
+
+[dependencies]
+tukubai-core = { path = "../tukubai-core" }

@@ -2,6 +2,13 @@ use std::error::Error as StdError;
 use std::fmt;
 use std::io::{self, BufRead};
 
+mod selector;
+
+pub use selector::{
+    ResolvedItem, Selector, SelectorExpr, SelectorOptions, SelectorParseError, SelectorProgram,
+    SelectorResolveError, parse_selectors, resolve_selectors,
+};
+
 /// Canonical display name for standard input across command crates.
 pub const STDIN_SOURCE_NAME: &str = "-";
 

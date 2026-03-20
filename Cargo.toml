@@ -2,6 +2,6 @@
 members = [
     "crates/tukubai-core",
     "crates/tukubai-lcnt",
+    "crates/tukubai-self",
 ]
 resolver = "3"
-

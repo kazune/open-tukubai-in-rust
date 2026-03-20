@@ -32,12 +32,15 @@ The repository currently contains these crates:
 crates/
   tukubai-core
   tukubai-lcnt
+  tukubai-self
 ```
 
 - **tukubai-core**
   shared parsing rules and record/field model
 - **tukubai-lcnt**
   first command crate; counts LF-terminated records
+- **tukubai-self**
+  minimal field-selection command using the shared selector model
 
 Additional command crates will be added incrementally after the shared parsing
 layer is in place.
@@ -64,7 +67,7 @@ Initial command coverage is expected to include:
 | command | status | description |
 |-------|--------|-------------|
 | lcnt | in workspace | count records |
-| self | planned | select records |
+| self | in workspace | select fields from records |
 | join1 | planned | join two inputs |
 
 ## Documents
