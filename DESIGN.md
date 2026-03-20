@@ -51,6 +51,7 @@ Shared command-input conventions:
 ## tukubai-core responsibilities
 
 - shared error types
+- shared command error formatting
 - record reader
 - field splitting
 - helper utilities

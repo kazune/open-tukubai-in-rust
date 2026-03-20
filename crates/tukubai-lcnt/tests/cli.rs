@@ -60,7 +60,29 @@ fn reports_unterminated_final_record() {
 
     assert!(!output.status.success());
     assert_eq!(output.stdout, b"");
-    assert_eq!(output.stderr, b"final record is not terminated by LF\n");
+    assert_eq!(
+        output.stderr,
+        b"Error(74)[lcnt] : final record is not terminated by LF\n"
+    );
+}
+
+#[test]
+fn reports_same_program_line_for_second_input_line() {
+    let file_path = write_temp_file("lcnt-unterminated-second-line", b"alpha\nbeta");
+
+    let output = Command::new(env!("CARGO_BIN_EXE_lcnt"))
+        .arg(&file_path)
+        .output()
+        .unwrap();
+
+    assert!(!output.status.success());
+    assert_eq!(output.stdout, b"");
+    assert_eq!(
+        output.stderr,
+        b"Error(74)[lcnt] : final record is not terminated by LF\n"
+    );
+
+    fs::remove_file(file_path).unwrap();
 }
 
 #[test]
