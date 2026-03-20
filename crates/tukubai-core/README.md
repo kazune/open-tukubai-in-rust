@@ -8,6 +8,7 @@ Shared parsing utilities for open-tukubai-in-rust.
 - configurable final-record termination policy
 - field splitting for `&[u8]` records
 - shared parse error types
+- shared command error formatting
 - shared standard-input source naming and `-` path handling
 
 ## Non responsibilities

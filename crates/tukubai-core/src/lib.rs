@@ -56,6 +56,22 @@ impl From<io::Error> for ParseError {
     }
 }
 
+/// Formats an error message using the repository-wide command error layout.
+pub fn format_command_error(
+    binary_name: &str,
+    line_number: u32,
+    message: &dyn fmt::Display,
+) -> String {
+    format!("Error({line_number})[{binary_name}] : {message}")
+}
+
+#[macro_export]
+macro_rules! command_error {
+    ($binary_name:expr, $message:expr) => {
+        $crate::format_command_error($binary_name, line!(), &$message)
+    };
+}
+
 pub struct RecordReader<R> {
     reader: R,
     options: ReaderOptions,

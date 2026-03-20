@@ -4,7 +4,9 @@ use std::io::{self, BufRead, BufReader, Write};
 use std::path::Path;
 use std::process;
 
-use tukubai_core::{ParseError, RecordReader, STDIN_SOURCE_NAME, is_stdin_path};
+use tukubai_core::{ParseError, RecordReader, STDIN_SOURCE_NAME, command_error, is_stdin_path};
+
+const BINARY_NAME: &str = "lcnt";
 
 fn main() {
     if let Err(error) = run() {
@@ -19,7 +21,8 @@ fn run() -> Result<(), String> {
 
     if args.files.is_empty() {
         let stdin = io::stdin();
-        let count = count_records(stdin.lock()).map_err(format_parse_error)?;
+        let count =
+            count_records(stdin.lock()).map_err(|error| format_parse_error(BINARY_NAME, error))?;
         let display_name = args.show_file_name.then_some(Path::new(STDIN_SOURCE_NAME));
         write_output(&mut stdout, display_name, count, args.show_file_name)
             .map_err(|error| error.to_string())?;
@@ -29,14 +32,11 @@ fn run() -> Result<(), String> {
     for file_name in &args.files {
         let count = if is_stdin_path(file_name) {
             let stdin = io::stdin();
-            count_records(stdin.lock())
-                .map_err(|error| format!("{STDIN_SOURCE_NAME}: {}", format_parse_error(error)))?
+            count_records(stdin.lock()).map_err(|error| format_parse_error(BINARY_NAME, error))?
         } else {
-            let file = File::open(file_name)
-                .map_err(|error| format!("{}: {error}", file_name.display()))?;
-            count_records(BufReader::new(file)).map_err(|error| {
-                format!("{}: {}", file_name.display(), format_parse_error(error))
-            })?
+            let file = File::open(file_name).map_err(|error| command_error!(BINARY_NAME, error))?;
+            count_records(BufReader::new(file))
+                .map_err(|error| format_parse_error(BINARY_NAME, error))?
         };
         write_output(&mut stdout, Some(file_name), count, args.show_file_name)
             .map_err(|error| error.to_string())?;
@@ -70,8 +70,8 @@ fn write_output<W: Write>(
     }
 }
 
-fn format_parse_error(error: ParseError) -> String {
-    error.to_string()
+fn format_parse_error(binary_name: &str, error: ParseError) -> String {
+    command_error!(binary_name, error)
 }
 
 fn parse_args<I>(args: I) -> Result<Args, String>

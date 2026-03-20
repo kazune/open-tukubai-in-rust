@@ -132,6 +132,12 @@ This input contains **3 records**.
 * the input does not end with `0x0A`
 * an I/O error occurs while reading input
 
+Error messages use this format:
+
+```
+Error(<program line number>)[lcnt] : <message>
+```
+
 ---
 
 ## Implementation notes
