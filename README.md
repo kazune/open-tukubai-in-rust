@@ -31,12 +31,15 @@ The repository currently contains these crates:
 ```
 crates/
   tukubai-core
+  tukubai-delf
   tukubai-lcnt
   tukubai-self
 ```
 
 - **tukubai-core**
   shared parsing rules and record/field model
+- **tukubai-delf**
+  minimal field-removal command using the shared selector model
 - **tukubai-lcnt**
   first command crate; counts LF-terminated records
 - **tukubai-self**
@@ -66,6 +69,7 @@ Initial command coverage is expected to include:
 
 | command | status | description |
 |-------|--------|-------------|
+| delf | in workspace | delete selected fields from records |
 | lcnt | in workspace | count records |
 | self | in workspace | select fields from records |
 | join1 | planned | join two inputs |

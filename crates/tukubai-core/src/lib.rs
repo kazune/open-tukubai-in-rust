@@ -5,8 +5,9 @@ use std::io::{self, BufRead};
 mod selector;
 
 pub use selector::{
-    ResolvedItem, Selector, SelectorExpr, SelectorOptions, SelectorParseError, SelectorProgram,
-    SelectorResolveError, parse_selectors, resolve_selectors,
+    FieldPosition, ResolvedItem, Selector, SelectorExpr, SelectorOptions, SelectorParseError,
+    SelectorProgram, SelectorResolveError, parse_selectors, resolve_selector_positions,
+    resolve_selectors,
 };
 
 /// Canonical display name for standard input across command crates.
