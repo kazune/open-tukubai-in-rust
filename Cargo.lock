@@ -7,6 +7,13 @@ name = "tukubai-core"
 version = "0.1.0"
 
 [[package]]
+name = "tukubai-delf"
+version = "0.1.0"
+dependencies = [
+ "tukubai-core",
+]
+
+[[package]]
 name = "tukubai-lcnt"
 version = "0.1.0"
 dependencies = [
