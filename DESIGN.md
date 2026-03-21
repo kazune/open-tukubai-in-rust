@@ -207,6 +207,8 @@ pub struct SelectorOptions {
 
 pub struct SelectorProgram { /* parsed selector terms */ }
 
+pub struct FieldPosition(/* 1-based resolved field position */);
+
 pub enum ResolvedItem<'a> {
     Field(&'a [u8]),
     RawRecord(&'a [u8]),
@@ -224,6 +226,11 @@ pub fn resolve_selectors<'a>(
     program: &'a SelectorProgram,
     record: &'a [u8],
 ) -> Result<Vec<ResolvedItem<'a>>, SelectorResolveError>;
+
+pub fn resolve_selector_positions(
+    program: &SelectorProgram,
+    record: &[u8],
+) -> Result<Vec<FieldPosition>, SelectorResolveError>;
 ```
 
 The exact type names may change, but the split between parsing and per-record

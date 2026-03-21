@@ -60,6 +60,7 @@ impl StdError for SelectorParseError {}
 pub enum SelectorResolveError {
     MissingField,
     NfResolvedToZero,
+    UnsupportedZero,
 }
 
 impl fmt::Display for SelectorResolveError {
@@ -67,6 +68,9 @@ impl fmt::Display for SelectorResolveError {
         match self {
             Self::MissingField => f.write_str("selector resolved to a non-existent field"),
             Self::NfResolvedToZero => f.write_str("selector NF-<n> resolved to field 0"),
+            Self::UnsupportedZero => {
+                f.write_str("selector 0 cannot be resolved to a field position")
+            }
         }
     }
 }
@@ -77,6 +81,24 @@ impl StdError for SelectorResolveError {}
 pub enum ResolvedItem<'a> {
     Field(&'a [u8]),
     RawRecord(&'a [u8]),
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct FieldPosition(u64);
+
+impl FieldPosition {
+    fn from_one_based(value: u64) -> Self {
+        debug_assert!(value > 0);
+        Self(value)
+    }
+
+    pub fn get(self) -> u64 {
+        self.0
+    }
+
+    pub fn to_zero_based(self) -> Option<usize> {
+        usize::try_from(self.0.checked_sub(1)?).ok()
+    }
 }
 
 pub fn parse_selectors<I, S>(
@@ -127,6 +149,48 @@ pub fn resolve_selectors<'a>(
                 } else {
                     for field in fields.iter().take(start_index + 1).skip(end_index).rev() {
                         resolved.push(ResolvedItem::Field(field));
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(resolved)
+}
+
+pub fn resolve_selector_positions(
+    program: &SelectorProgram,
+    record: &[u8],
+) -> Result<Vec<FieldPosition>, SelectorResolveError> {
+    let fields: Vec<&[u8]> = split_fields(record).collect();
+    let mut resolved = Vec::new();
+
+    for selector in program.selectors() {
+        match selector {
+            Selector::FieldNumber(number) => {
+                resolve_field_index(*number, fields.len())?;
+                resolved.push(FieldPosition::from_one_based(*number));
+            }
+            Selector::RawRecord => return Err(SelectorResolveError::UnsupportedZero),
+            Selector::LastField => {
+                let number = resolve_last_field_number(fields.len())?;
+                resolved.push(FieldPosition::from_one_based(number));
+            }
+            Selector::LastFieldMinus(offset) => {
+                let number = resolve_last_field_minus_number(*offset, fields.len())?;
+                resolved.push(FieldPosition::from_one_based(number));
+            }
+            Selector::Range(start, end) => {
+                let start_number = resolve_expr_number(start, fields.len())?;
+                let end_number = resolve_expr_number(end, fields.len())?;
+
+                if start_number <= end_number {
+                    for number in start_number..=end_number {
+                        resolved.push(FieldPosition::from_one_based(number));
+                    }
+                } else {
+                    for number in (end_number..=start_number).rev() {
+                        resolved.push(FieldPosition::from_one_based(number));
                     }
                 }
             }
@@ -225,6 +289,22 @@ fn resolve_expr(expr: &SelectorExpr, fields: &[&[u8]]) -> Result<usize, Selector
     }
 }
 
+fn resolve_expr_number(
+    expr: &SelectorExpr,
+    field_count: usize,
+) -> Result<u64, SelectorResolveError> {
+    match expr {
+        SelectorExpr::FieldNumber(number) => {
+            resolve_field_index(*number, field_count)?;
+            Ok(*number)
+        }
+        SelectorExpr::LastField => resolve_last_field_number(field_count),
+        SelectorExpr::LastFieldMinus(offset) => {
+            resolve_last_field_minus_number(*offset, field_count)
+        }
+    }
+}
+
 fn resolve_field_number<'a>(
     number: u64,
     fields: &[&'a [u8]],
@@ -238,6 +318,14 @@ fn resolve_last_field<'a>(fields: &[&'a [u8]]) -> Result<&'a [u8], SelectorResol
         .last()
         .copied()
         .ok_or(SelectorResolveError::MissingField)
+}
+
+fn resolve_last_field_number(field_count: usize) -> Result<u64, SelectorResolveError> {
+    if field_count == 0 {
+        return Err(SelectorResolveError::MissingField);
+    }
+
+    u64::try_from(field_count).map_err(|_| SelectorResolveError::MissingField)
 }
 
 fn resolve_field_index(number: u64, field_count: usize) -> Result<usize, SelectorResolveError> {
@@ -257,6 +345,14 @@ fn resolve_last_field_minus(
     offset: u64,
     field_count: usize,
 ) -> Result<usize, SelectorResolveError> {
+    let number = resolve_last_field_minus_number(offset, field_count)?;
+    resolve_field_index(number, field_count)
+}
+
+fn resolve_last_field_minus_number(
+    offset: u64,
+    field_count: usize,
+) -> Result<u64, SelectorResolveError> {
     let offset = usize::try_from(offset).map_err(|_| SelectorResolveError::MissingField)?;
 
     if field_count == 0 {
@@ -271,14 +367,14 @@ fn resolve_last_field_minus(
         return Err(SelectorResolveError::MissingField);
     }
 
-    Ok(field_count - offset - 1)
+    u64::try_from(field_count - offset).map_err(|_| SelectorResolveError::MissingField)
 }
 
 #[cfg(test)]
 mod tests {
     use super::{
-        ResolvedItem, Selector, SelectorExpr, SelectorOptions, SelectorParseError,
-        SelectorResolveError, parse_selectors, resolve_selectors,
+        FieldPosition, ResolvedItem, Selector, SelectorExpr, SelectorOptions, SelectorParseError,
+        SelectorResolveError, parse_selectors, resolve_selector_positions, resolve_selectors,
     };
 
     #[test]
@@ -409,6 +505,61 @@ mod tests {
                 ResolvedItem::Field(&b"c"[..]),
             ]
         );
+    }
+
+    #[test]
+    fn resolves_positions_in_selector_order() {
+        let program = parse_selectors(
+            [b"2".as_slice(), b"NF-1/NF".as_slice(), b"2".as_slice()],
+            SelectorOptions::default(),
+        )
+        .unwrap();
+
+        let resolved = resolve_selector_positions(&program, b"a b c d").unwrap();
+
+        assert_eq!(
+            resolved,
+            vec![
+                FieldPosition::from_one_based(2),
+                FieldPosition::from_one_based(3),
+                FieldPosition::from_one_based(4),
+                FieldPosition::from_one_based(2),
+            ]
+        );
+    }
+
+    #[test]
+    fn resolves_reverse_range_positions() {
+        let program = parse_selectors([b"5/2".as_slice()], SelectorOptions::default()).unwrap();
+
+        let resolved = resolve_selector_positions(&program, b"a b c d e").unwrap();
+
+        assert_eq!(
+            resolved,
+            vec![
+                FieldPosition::from_one_based(5),
+                FieldPosition::from_one_based(4),
+                FieldPosition::from_one_based(3),
+                FieldPosition::from_one_based(2),
+            ]
+        );
+    }
+
+    #[test]
+    fn rejects_zero_for_position_resolution() {
+        let program =
+            parse_selectors([b"0".as_slice()], SelectorOptions { allow_zero: true }).unwrap();
+
+        let error = resolve_selector_positions(&program, b"a b").unwrap_err();
+        assert_eq!(error, SelectorResolveError::UnsupportedZero);
+    }
+
+    #[test]
+    fn field_position_converts_to_zero_based() {
+        let position = FieldPosition::from_one_based(3);
+
+        assert_eq!(position.get(), 3);
+        assert_eq!(position.to_zero_based(), Some(2));
     }
 
     #[test]

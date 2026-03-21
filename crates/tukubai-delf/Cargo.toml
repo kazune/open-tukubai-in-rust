@@ -1,0 +1,11 @@
+[package]
+name = "tukubai-delf"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "delf"
+path = "src/main.rs"
+
+[dependencies]
+tukubai-core = { path = "../tukubai-core" }
