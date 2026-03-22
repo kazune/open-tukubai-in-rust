@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "crates/tukubai-core",
+    "crates/tukubai-delr",
     "crates/tukubai-delf",
     "crates/tukubai-lcnt",
     "crates/tukubai-selr",
