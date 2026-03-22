@@ -79,6 +79,7 @@ Initial command coverage is expected to include:
 - SPEC.md — shared parsing specification
 - DESIGN.md — architecture
 - TESTING.md — testing strategy
+- docs/man-policy.md — manual page authoring and generation policy
 - ROADMAP.md — implementation phases
 - CONTRIBUTING.md — contribution and review rules
 

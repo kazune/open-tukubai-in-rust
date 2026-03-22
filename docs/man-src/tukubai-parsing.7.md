@@ -1,6 +1,6 @@
 % TUKUBAI-PARSING(7) open-tukubai-in-rust | Miscellaneous Information Manual
 % open-tukubai-in-rust
-%
+% March 22, 2026
 
 # NAME
 
