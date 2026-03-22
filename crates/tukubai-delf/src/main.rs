@@ -97,7 +97,7 @@ fn parse_selector_program(selectors: &[OsString]) -> Result<tukubai_core::Select
             .iter()
             .map(OsString::as_os_str)
             .map(OsStr::as_bytes),
-        SelectorOptions { allow_zero: false },
+        SelectorOptions::multi_field(false),
     )
     .map_err(|error| format_selector_parse_error(BINARY_NAME, error))
 }
@@ -146,7 +146,7 @@ where
 
     let last_is_selector = parse_selectors(
         [maybe_file.as_os_str().as_bytes()],
-        SelectorOptions { allow_zero: false },
+        SelectorOptions::multi_field(false),
     )
     .is_ok();
 

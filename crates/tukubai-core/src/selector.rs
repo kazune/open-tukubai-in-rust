@@ -3,9 +3,32 @@ use std::fmt;
 
 use crate::split_fields;
 
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct SelectorOptions {
     pub allow_zero: bool,
+    pub allow_range: bool,
+}
+
+impl SelectorOptions {
+    pub const fn single_field(allow_zero: bool) -> Self {
+        Self {
+            allow_zero,
+            allow_range: false,
+        }
+    }
+
+    pub const fn multi_field(allow_zero: bool) -> Self {
+        Self {
+            allow_zero,
+            allow_range: true,
+        }
+    }
+}
+
+impl Default for SelectorOptions {
+    fn default() -> Self {
+        Self::multi_field(false)
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -38,6 +61,7 @@ pub enum SelectorExpr {
 #[derive(Debug, Eq, PartialEq)]
 pub enum SelectorParseError {
     UnsupportedZero,
+    UnsupportedRange,
     ZeroInRange,
     InvalidSyntax,
     InvalidNumber,
@@ -47,6 +71,9 @@ impl fmt::Display for SelectorParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::UnsupportedZero => f.write_str("selector 0 is not supported by this command"),
+            Self::UnsupportedRange => {
+                f.write_str("range selectors are not supported by this command")
+            }
             Self::ZeroInRange => f.write_str("selector 0 must not appear inside a range"),
             Self::InvalidSyntax => f.write_str("invalid selector syntax"),
             Self::InvalidNumber => f.write_str("invalid selector number"),
@@ -202,6 +229,10 @@ pub fn resolve_selector_positions(
 
 fn parse_selector(input: &[u8], options: SelectorOptions) -> Result<Selector, SelectorParseError> {
     if let Some((left, right)) = split_range(input) {
+        if !options.allow_range {
+            return Err(SelectorParseError::UnsupportedRange);
+        }
+
         let start = parse_expr(left, options)?;
         let end = parse_expr(right, options)?;
         return Ok(Selector::Range(start, end));
@@ -386,7 +417,7 @@ mod tests {
                 b"NF".as_slice(),
                 b"NF-0".as_slice(),
             ],
-            SelectorOptions { allow_zero: true },
+            SelectorOptions::multi_field(true),
         )
         .unwrap();
 
@@ -405,7 +436,7 @@ mod tests {
     fn parses_ranges() {
         let program = parse_selectors(
             [b"NF-1/NF".as_slice(), b"5/2".as_slice()],
-            SelectorOptions { allow_zero: true },
+            SelectorOptions::multi_field(true),
         )
         .unwrap();
 
@@ -425,9 +456,16 @@ mod tests {
     }
 
     #[test]
+    fn rejects_ranges_when_disabled() {
+        let error =
+            parse_selectors([b"1/2".as_slice()], SelectorOptions::single_field(false)).unwrap_err();
+        assert_eq!(error, SelectorParseError::UnsupportedRange);
+    }
+
+    #[test]
     fn rejects_zero_inside_range() {
         let error =
-            parse_selectors([b"0/3".as_slice()], SelectorOptions { allow_zero: true }).unwrap_err();
+            parse_selectors([b"0/3".as_slice()], SelectorOptions::multi_field(true)).unwrap_err();
         assert_eq!(error, SelectorParseError::ZeroInRange);
     }
 
@@ -442,7 +480,7 @@ mod tests {
             b"/5".as_slice(),
             b"3/".as_slice(),
         ] {
-            let error = parse_selectors([input], SelectorOptions { allow_zero: true }).unwrap_err();
+            let error = parse_selectors([input], SelectorOptions::multi_field(true)).unwrap_err();
             assert_eq!(error, SelectorParseError::InvalidSyntax);
         }
     }
@@ -451,7 +489,7 @@ mod tests {
     fn resolves_fields_and_raw_record_in_selector_order() {
         let program = parse_selectors(
             [b"2".as_slice(), b"0".as_slice(), b"NF".as_slice()],
-            SelectorOptions { allow_zero: true },
+            SelectorOptions::multi_field(true),
         )
         .unwrap();
 
@@ -470,7 +508,7 @@ mod tests {
     #[test]
     fn resolves_reverse_ranges() {
         let program =
-            parse_selectors([b"5/2".as_slice()], SelectorOptions { allow_zero: true }).unwrap();
+            parse_selectors([b"5/2".as_slice()], SelectorOptions::multi_field(true)).unwrap();
 
         let resolved = resolve_selectors(&program, b"a b c d e").unwrap();
 
@@ -489,7 +527,7 @@ mod tests {
     fn preserves_duplicate_fields() {
         let program = parse_selectors(
             [b"2".as_slice(), b"2/4".as_slice(), b"3".as_slice()],
-            SelectorOptions { allow_zero: true },
+            SelectorOptions::multi_field(true),
         )
         .unwrap();
 
@@ -548,7 +586,7 @@ mod tests {
     #[test]
     fn rejects_zero_for_position_resolution() {
         let program =
-            parse_selectors([b"0".as_slice()], SelectorOptions { allow_zero: true }).unwrap();
+            parse_selectors([b"0".as_slice()], SelectorOptions::multi_field(true)).unwrap();
 
         let error = resolve_selector_positions(&program, b"a b").unwrap_err();
         assert_eq!(error, SelectorResolveError::UnsupportedZero);
@@ -565,12 +603,12 @@ mod tests {
     #[test]
     fn allows_empty_record_only_for_zero() {
         let zero_program =
-            parse_selectors([b"0".as_slice()], SelectorOptions { allow_zero: true }).unwrap();
+            parse_selectors([b"0".as_slice()], SelectorOptions::multi_field(true)).unwrap();
         let resolved = resolve_selectors(&zero_program, b"").unwrap();
         assert_eq!(resolved, vec![ResolvedItem::RawRecord(&b""[..])]);
 
         let field_program =
-            parse_selectors([b"1".as_slice()], SelectorOptions { allow_zero: true }).unwrap();
+            parse_selectors([b"1".as_slice()], SelectorOptions::multi_field(true)).unwrap();
         let error = resolve_selectors(&field_program, b"").unwrap_err();
         assert_eq!(error, SelectorResolveError::MissingField);
     }
@@ -578,7 +616,7 @@ mod tests {
     #[test]
     fn rejects_nf_minus_when_it_resolves_to_zero() {
         let program =
-            parse_selectors([b"NF-3".as_slice()], SelectorOptions { allow_zero: true }).unwrap();
+            parse_selectors([b"NF-3".as_slice()], SelectorOptions::multi_field(true)).unwrap();
 
         let error = resolve_selectors(&program, b"a b c").unwrap_err();
         assert_eq!(error, SelectorResolveError::NfResolvedToZero);
@@ -588,7 +626,7 @@ mod tests {
     fn rejects_missing_fields() {
         let program = parse_selectors(
             [b"NF-4".as_slice(), b"4".as_slice()],
-            SelectorOptions { allow_zero: true },
+            SelectorOptions::multi_field(true),
         )
         .unwrap();
 

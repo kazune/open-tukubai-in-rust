@@ -11,7 +11,7 @@ use tukubai_core::{
     SelectorResolveError, command_error, is_stdin_path, parse_selectors, resolve_selectors,
 };
 
-const BINARY_NAME: &str = "self";
+const BINARY_NAME: &str = "selr";
 
 fn main() {
     if let Err(error) = run() {
@@ -27,24 +27,43 @@ fn run() -> Result<(), String> {
     if let Some(file_name) = args.file.as_deref() {
         if is_stdin_path(file_name) {
             let stdin = io::stdin();
-            process_records(stdin.lock(), &args.selectors, &mut stdout)
+            process_records(stdin.lock(), &args.selector, &args.needle, &mut stdout)
         } else {
             let file = File::open(file_name).map_err(|error| command_error!(BINARY_NAME, error))?;
-            process_records(BufReader::new(file), &args.selectors, &mut stdout)
+            process_records(
+                BufReader::new(file),
+                &args.selector,
+                &args.needle,
+                &mut stdout,
+            )
         }
     } else {
         let stdin = io::stdin();
-        process_records(stdin.lock(), &args.selectors, &mut stdout)
+        process_records(stdin.lock(), &args.selector, &args.needle, &mut stdout)
     }
 }
 
 fn process_records<R: BufRead, W: Write>(
     reader: R,
-    selectors: &[OsString],
+    selector: &OsStr,
+    needle: &OsStr,
     writer: &mut W,
 ) -> Result<(), String> {
-    let program = parse_selector_program(selectors)?;
+    let needle = needle.as_bytes();
     let mut reader = RecordReader::new(reader);
+
+    if needle.is_empty() {
+        while let Some(record) = reader
+            .read_record()
+            .map_err(|error| format_parse_error(BINARY_NAME, error))?
+        {
+            write_record(writer, record).map_err(|error| error.to_string())?;
+        }
+
+        return Ok(());
+    }
+
+    let program = parse_selector_program(selector)?;
 
     while let Some(record) = reader
         .read_record()
@@ -52,37 +71,33 @@ fn process_records<R: BufRead, W: Write>(
     {
         let resolved = resolve_selectors(&program, record)
             .map_err(|error| format_selector_resolve_error(BINARY_NAME, error))?;
-        write_resolved_record(writer, &resolved).map_err(|error| error.to_string())?;
+
+        let field = match resolved.as_slice() {
+            [ResolvedItem::Field(field)] => *field,
+            _ => {
+                return Err(command_error!(
+                    BINARY_NAME,
+                    "internal error: selector did not resolve to exactly one field"
+                ));
+            }
+        };
+
+        if field == needle {
+            write_record(writer, record).map_err(|error| error.to_string())?;
+        }
     }
 
     Ok(())
 }
 
-fn write_resolved_record<W: Write>(writer: &mut W, items: &[ResolvedItem<'_>]) -> io::Result<()> {
-    for (index, item) in items.iter().enumerate() {
-        if index > 0 {
-            writer.write_all(b" ")?;
-        }
-
-        match item {
-            ResolvedItem::Field(field) | ResolvedItem::RawRecord(field) => {
-                writer.write_all(field)?
-            }
-        }
-    }
-
+fn write_record<W: Write>(writer: &mut W, record: &[u8]) -> io::Result<()> {
+    writer.write_all(record)?;
     writer.write_all(b"\n")
 }
 
-fn parse_selector_program(selectors: &[OsString]) -> Result<tukubai_core::SelectorProgram, String> {
-    parse_selectors(
-        selectors
-            .iter()
-            .map(OsString::as_os_str)
-            .map(OsStr::as_bytes),
-        SelectorOptions::multi_field(true),
-    )
-    .map_err(|error| format_selector_parse_error(BINARY_NAME, error))
+fn parse_selector_program(selector: &OsStr) -> Result<tukubai_core::SelectorProgram, String> {
+    parse_selectors([selector.as_bytes()], SelectorOptions::single_field(false))
+        .map_err(|error| format_selector_parse_error(BINARY_NAME, error))
 }
 
 fn format_parse_error(binary_name: &str, error: ParseError) -> String {
@@ -103,50 +118,27 @@ where
     I::Item: Into<OsString>,
 {
     let tokens: Vec<OsString> = args.into_iter().map(Into::into).collect();
-    if tokens.is_empty() {
-        return Err(command_error!(
-            BINARY_NAME,
-            "at least one selector is required"
-        ));
-    }
 
-    if tokens.len() == 1 {
-        return Ok(Args {
-            selectors: tokens,
+    match tokens.as_slice() {
+        [selector, needle] => Ok(Args {
+            selector: selector.clone(),
+            needle: needle.clone(),
             file: None,
-        });
-    }
-
-    let maybe_file = tokens.last().cloned().expect("tokens is not empty");
-    let selector_tokens = &tokens[..tokens.len() - 1];
-
-    if selector_tokens.is_empty() {
-        return Err(command_error!(
+        }),
+        [selector, needle, file] => Ok(Args {
+            selector: selector.clone(),
+            needle: needle.clone(),
+            file: Some(PathBuf::from(file)),
+        }),
+        _ => Err(command_error!(
             BINARY_NAME,
-            "at least one selector is required"
-        ));
+            "usage: selr <fldnum> <str> [<file>]"
+        )),
     }
-
-    let last_is_selector = parse_selectors(
-        [maybe_file.as_os_str().as_bytes()],
-        SelectorOptions::multi_field(true),
-    )
-    .is_ok();
-
-    if last_is_selector {
-        return Ok(Args {
-            selectors: tokens,
-            file: None,
-        });
-    }
-
-    Ok(Args {
-        selectors: selector_tokens.to_vec(),
-        file: Some(PathBuf::from(maybe_file)),
-    })
 }
 
 struct Args {
-    selectors: Vec<OsString>,
+    selector: OsString,
+    needle: OsString,
     file: Option<PathBuf>,
 }
