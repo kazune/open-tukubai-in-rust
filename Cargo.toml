@@ -3,6 +3,7 @@ members = [
     "crates/tukubai-core",
     "crates/tukubai-delf",
     "crates/tukubai-lcnt",
+    "crates/tukubai-selr",
     "crates/tukubai-self",
 ]
 resolver = "3"

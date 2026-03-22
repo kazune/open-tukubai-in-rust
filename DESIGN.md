@@ -28,6 +28,7 @@ Command crates depend on tukubai-core.
 crates/
 tukubai-core
 tukubai-self
+tukubai-selr
 tukubai-join1
 tukubai-count
 
@@ -117,6 +118,7 @@ The shared selector layer should cover:
 - `NF` resolution against the current record
 - missing-field validation
 - command-configurable support for selector `0`
+- command-configurable support for inclusive ranges
 
 The shared selector layer should not cover command-specific substring syntax such as:
 
@@ -131,7 +133,7 @@ Those forms remain in the corresponding command crate, such as `tukubai-self`.
 
 ### Selector syntax scope
 
-The initial shared selector syntax should support:
+The shared selector syntax should support, with command-configurable subsets:
 
 - decimal field numbers
 - `NF`
@@ -180,6 +182,14 @@ Examples that must be rejected:
 
 - `0/3`
 - `2/0`
+
+### Range support
+
+Some commands support only a single field selector token and must reject
+inclusive ranges such as `a/b`.
+
+To keep selector behavior reusable, `tukubai-core` should make range support
+explicit through configuration, alongside selector `0` support.
 
 ### Parsing and resolution split
 
