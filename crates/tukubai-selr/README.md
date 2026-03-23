@@ -23,6 +23,7 @@ Supported forms:
 
 Not supported:
 
+* `--through`
 * selector `0`
 * ranges such as `a/b`
 

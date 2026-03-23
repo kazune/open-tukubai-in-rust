@@ -17,10 +17,7 @@ The minimal implementation supports:
 The minimal implementation does not support:
 
 * selector `0`
-* substring selectors such as `1.4` or `2.1.4`
-* `-d`
-* `-f`
-* `-n<string>`
+* option `-d`
 
 ## Usage
 
@@ -165,6 +162,3 @@ The shared layer can include:
 * missing-field validation
 
 Selector `0` is command-specific and is not supported by `delf`.
-
-Substring selectors such as `1.4` are specific to `self` and are not part of
-the shared field-selection grammar.
