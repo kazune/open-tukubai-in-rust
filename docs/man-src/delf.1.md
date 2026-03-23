@@ -14,9 +14,8 @@ delf - remove selected fields from byte-oriented records
 
 `delf` removes selected fields from byte-oriented tukubai records.
 
-This minimal implementation supports field removal only. Selector `0`,
-substring selectors such as `1.4` or `2.1.4`, `-d`, `-f`, and `-n<string>` are
-not supported.
+This minimal implementation supports field removal only. Selector `0` and
+option `-d` are not supported.
 
 Input is processed using the shared open-tukubai-in-rust parsing rules
 described in **tukubai-parsing**(7).
