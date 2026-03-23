@@ -1,0 +1,11 @@
+[package]
+name = "tukubai-join0"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "join0"
+path = "src/main.rs"
+
+[dependencies]
+tukubai-core = { path = "../tukubai-core" }
