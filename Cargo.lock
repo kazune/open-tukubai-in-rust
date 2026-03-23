@@ -21,6 +21,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "tukubai-join0"
+version = "0.1.0"
+dependencies = [
+ "tukubai-core",
+]
+
+[[package]]
 name = "tukubai-lcnt"
 version = "0.1.0"
 dependencies = [

@@ -2,8 +2,17 @@ use std::error::Error as StdError;
 use std::fmt;
 use std::io::{self, BufRead};
 
+mod key;
+mod output;
 mod selector;
 
+pub use key::{
+    KeyAttr, KeyCompareError, KeyField, KeyFieldExpr, KeyItem, KeyKind, KeyOptions, KeyParseError,
+    KeyProgram, KeyResolveError, ResolvedKey, ResolvedKeyField, ResolvedKeyPosition,
+    compare_resolved_keys, normalize_key_positions_to_one, parse_key_program, resolve_key,
+    resolve_key_positions, resolve_key_with_positions,
+};
+pub use output::{OutputError, OutputTarget};
 pub use selector::{
     FieldPosition, ResolvedItem, Selector, SelectorExpr, SelectorOptions, SelectorParseError,
     SelectorProgram, SelectorResolveError, parse_selectors, resolve_selector_positions,

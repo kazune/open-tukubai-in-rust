@@ -114,7 +114,7 @@ pub enum ResolvedItem<'a> {
 pub struct FieldPosition(u64);
 
 impl FieldPosition {
-    fn from_one_based(value: u64) -> Self {
+    pub(crate) fn from_one_based(value: u64) -> Self {
         debug_assert!(value > 0);
         Self(value)
     }

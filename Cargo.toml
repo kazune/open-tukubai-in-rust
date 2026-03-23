@@ -3,6 +3,7 @@ members = [
     "crates/tukubai-core",
     "crates/tukubai-delr",
     "crates/tukubai-delf",
+    "crates/tukubai-join0",
     "crates/tukubai-lcnt",
     "crates/tukubai-selr",
     "crates/tukubai-self",
